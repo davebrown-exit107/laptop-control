@@ -34,7 +34,7 @@ var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "laptop-control",
+	Use:   "lc",
 	Short: "A tool for controlling laptop hardware",
 	Long: `A tool for controlling laptop hardware.
 laptop-control uses dbus and other means to control your laptop's
