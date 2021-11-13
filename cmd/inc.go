@@ -22,8 +22,10 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"fmt"
+	"log"
 
+	"github.com/esiqveland/notify"
+	"github.com/godbus/dbus/v5"
 	"mrogalski.eu/go/pulseaudio"
 
 	"github.com/spf13/cobra"
@@ -37,16 +39,16 @@ var incCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client, err := pulseaudio.NewClient()
 		if err != nil {
-			fmt.Println("Error encountered in building client")
+			log.Println("Error encountered in building client")
 		}
 
 		curVolume, err := client.Volume()
 		if err != nil {
-			fmt.Printf("Error encountered: %v\n", err)
+			log.Printf("Error encountered: %v\n", err)
 		}
 		changeBy, err := ConvertToFloat(args[0])
 		if err != nil {
-			fmt.Printf("Error encountered: %v\n", err)
+			log.Printf("Error encountered: %v\n", err)
 		}
 		newVolume := curVolume + changeBy
 
@@ -56,11 +58,25 @@ var incCmd = &cobra.Command{
 			client.SetVolume(1)
 		}
 
-		volumeStr, _, _, err := GetCurrentVolume(client)
+		volumeNotify, _, _, _, err := GetCurrentVolume(client)
+		conn, err := dbus.SessionBusPrivate()
 		if err != nil {
-			fmt.Printf("Error encountered: %v\n", err)
+			panic(err)
 		}
-		fmt.Println(volumeStr)
+		defer conn.Close()
+
+		if err = conn.Auth(nil); err != nil {
+			panic(err)
+		}
+
+		if err = conn.Hello(); err != nil {
+			panic(err)
+		}
+
+		_, err = notify.SendNotification(conn, volumeNotify)
+		if err != nil {
+			log.Printf("error sending notification: %v", err.Error())
+		}
 	},
 }
 

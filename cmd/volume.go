@@ -22,11 +22,14 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"fmt"
-
 	"mrogalski.eu/go/pulseaudio"
 
+	"log"
+
 	"github.com/spf13/cobra"
+
+	"github.com/esiqveland/notify"
+	"github.com/godbus/dbus/v5"
 )
 
 // volumeCmd represents the volume command
@@ -38,14 +41,32 @@ var volumeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client, err := pulseaudio.NewClient()
 		if err != nil {
-			fmt.Println("Error encountered in building client")
+			log.Println("Error encountered in building client")
 		}
 
-		volumeStr, _, _, err := GetCurrentVolume(client)
+		volumeNotify, _, _, _, err := GetCurrentVolume(client)
 		if err != nil {
-			fmt.Printf("Error encountered: %v\n", err)
+			log.Printf("Error encountered: %v\n", err)
 		}
-		fmt.Println(volumeStr)
+
+		conn, err := dbus.SessionBusPrivate()
+		if err != nil {
+			panic(err)
+		}
+		defer conn.Close()
+
+		if err = conn.Auth(nil); err != nil {
+			panic(err)
+		}
+
+		if err = conn.Hello(); err != nil {
+			panic(err)
+		}
+
+		_, err = notify.SendNotification(conn, volumeNotify)
+		if err != nil {
+			log.Printf("error sending notification: %v", err.Error())
+		}
 
 	},
 }
