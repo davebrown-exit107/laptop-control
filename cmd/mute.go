@@ -40,12 +40,14 @@ var muteCmd = &cobra.Command{
 			fmt.Println("Error encountered in building client")
 		}
 
-		curVolume, err := client.Volume()
+		client.ToggleMute()
+
+		volumeStr, _, _, err := GetCurrentVolume(client)
 		if err != nil {
 			fmt.Printf("Error encountered: %v\n", err)
 		}
+		fmt.Println(volumeStr)
 
-		fmt.Printf("Volume: %d\n", int(curVolume*100))
 	},
 }
 

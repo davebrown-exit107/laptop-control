@@ -8,7 +8,9 @@ require (
 )
 
 require (
+	github.com/esiqveland/notify v0.11.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
+	github.com/godbus/dbus/v5 v5.0.6 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/lawl/pulseaudio v0.0.0-20210928141934-ed754c0c6618 // indirect

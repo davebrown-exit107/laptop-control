@@ -41,12 +41,11 @@ var volumeCmd = &cobra.Command{
 			fmt.Println("Error encountered in building client")
 		}
 
-		curVolume, err := client.Volume()
+		volumeStr, _, _, err := GetCurrentVolume(client)
 		if err != nil {
 			fmt.Printf("Error encountered: %v\n", err)
 		}
-
-		fmt.Printf("Volume: %d\n", int(curVolume*100))
+		fmt.Println(volumeStr)
 
 	},
 }
