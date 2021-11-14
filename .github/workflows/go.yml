@@ -25,3 +25,4 @@ jobs:
       with:
         # Artifact name
         name: lc
+        path: ./
