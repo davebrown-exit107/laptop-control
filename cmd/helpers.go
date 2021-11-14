@@ -14,19 +14,13 @@ import (
 	"mrogalski.eu/go/pulseaudio"
 )
 
-// KbdBrightness is a struct to support simplifying communication of keyboard
-// brightness information
-type KbdBrightness struct {
-	notifyMsg     notify.Notification
-	stringMsg     string
-	curBrightness int
-}
-
 // Brightness is a struct to support simplifying communication of brightness
 // information
 type Brightness struct {
 	notifyMsg     notify.Notification
 	stringMsg     string
+	percent       int
+	maxBrightness int
 	curBrightness int
 }
 
@@ -55,15 +49,17 @@ func GetCurBrightness() Brightness {
 		log.Println(err)
 	}
 
-	current.curBrightness = int((float32(curBrightness) / float32(maxBrightness)) * 100)
-	current.stringMsg = fmt.Sprintf("Brightness: %d%%", current.curBrightness)
+	current.curBrightness = curBrightness
+	current.maxBrightness = maxBrightness
+	current.percent = int((float32(curBrightness) / float32(maxBrightness)) * 100)
+	current.stringMsg = fmt.Sprintf("Brightness: %d%%", current.percent)
 
 	current.notifyMsg = notify.Notification{
 		AppName:       "local-control",
 		ReplacesID:    uint32(0),
 		AppIcon:       iconName,
 		Summary:       "screen",
-		Body:          fmt.Sprintf("%d%%", int(current.curBrightness)),
+		Body:          fmt.Sprintf("%d%%", int(current.percent)),
 		Actions:       []notify.Action{},
 		Hints:         map[string]dbus.Variant{},
 		ExpireTimeout: time.Second * 5,

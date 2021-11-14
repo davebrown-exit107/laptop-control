@@ -23,6 +23,9 @@ package cmd
 
 import (
 	"log"
+	"os"
+	"path"
+	"strconv"
 
 	"github.com/esiqveland/notify"
 	"github.com/godbus/dbus/v5"
@@ -34,6 +37,107 @@ var screenCmd = &cobra.Command{
 	Use:   "screen",
 	Short: "Control the laptop screen brightness",
 	Long:  "Control the laptop screen brightness",
+	Args:  cobra.NoArgs,
+}
+
+var incScreenCmd = &cobra.Command{
+	Use:   "inc",
+	Short: "Increase the laptop screen brightness",
+	Long:  "Increase the laptop screen brightness",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		sysBasePath := "/sys/class/backlight/intel_backlight"
+
+		curBrightness := GetCurBrightness()
+
+		changeBy, err := strconv.Atoi(args[0])
+		if err != nil {
+			panic(err)
+		}
+		newBrightnessPercent := curBrightness.percent + changeBy + 1
+		newBrightness := ((curBrightness.maxBrightness - 1) * newBrightnessPercent) / 100
+
+		if newBrightnessPercent >= 100 {
+			os.WriteFile(path.Join(sysBasePath, "brightness"), []byte(strconv.Itoa(curBrightness.maxBrightness)), 0644)
+		} else {
+			os.WriteFile(path.Join(sysBasePath, "brightness"), []byte(strconv.Itoa(newBrightness)), 0644)
+		}
+
+		curBrightness = GetCurBrightness()
+
+		conn, err := dbus.SessionBusPrivate()
+		if err != nil {
+			panic(err)
+		}
+
+		defer conn.Close()
+
+		if err = conn.Auth(nil); err != nil {
+			panic(err)
+		}
+
+		if err = conn.Hello(); err != nil {
+			panic(err)
+		}
+
+		_, err = notify.SendNotification(conn, curBrightness.notifyMsg)
+		if err != nil {
+			log.Printf("error sending notification: %v", err.Error())
+		}
+	},
+}
+
+var decScreenCmd = &cobra.Command{
+	Use:   "dec",
+	Short: "decrease the laptop screen brightness",
+	Long:  "decrease the laptop screen brightness",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		sysBasePath := "/sys/class/backlight/intel_backlight"
+
+		curBrightness := GetCurBrightness()
+
+		changeBy, err := strconv.Atoi(args[0])
+		if err != nil {
+			panic(err)
+		}
+		newBrightnessPercent := curBrightness.percent - changeBy + 1
+		newBrightness := ((curBrightness.maxBrightness - 1) * newBrightnessPercent) / 100
+
+		if newBrightnessPercent <= 0 {
+			os.WriteFile(path.Join(sysBasePath, "brightness"), []byte("0"), 0644)
+		} else {
+			os.WriteFile(path.Join(sysBasePath, "brightness"), []byte(strconv.Itoa(newBrightness)), 0644)
+		}
+
+		curBrightness = GetCurBrightness()
+
+		conn, err := dbus.SessionBusPrivate()
+		if err != nil {
+			panic(err)
+		}
+		defer conn.Close()
+
+		if err = conn.Auth(nil); err != nil {
+			panic(err)
+		}
+
+		if err = conn.Hello(); err != nil {
+			panic(err)
+		}
+
+		_, err = notify.SendNotification(conn, curBrightness.notifyMsg)
+		if err != nil {
+			log.Printf("error sending notification: %v", err.Error())
+		}
+	},
+}
+
+var getScreenCmd = &cobra.Command{
+	Use:   "get",
+	Short: "getrease the laptop screen brightness",
+	Long:  "getrease the laptop screen brightness",
+	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		curBrightness := GetCurBrightness()
 
@@ -58,16 +162,58 @@ var screenCmd = &cobra.Command{
 	},
 }
 
+var setScreenCmd = &cobra.Command{
+	Use:   "set",
+	Short: "setrease the laptop screen brightness",
+	Long:  "setrease the laptop screen brightness",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		sysBasePath := "/sys/class/backlight/intel_backlight"
+
+		curBrightness := GetCurBrightness()
+
+		newBrightnessPercent, err := strconv.Atoi(args[0])
+		if err != nil {
+			panic(err)
+		}
+
+		switch {
+		case newBrightnessPercent >= 100:
+			os.WriteFile(path.Join(sysBasePath, "brightness"), []byte(strconv.Itoa(curBrightness.maxBrightness)), 0644)
+		case newBrightnessPercent <= 0:
+			os.WriteFile(path.Join(sysBasePath, "brightness"), []byte("0"), 0644)
+		default:
+			newBrightness := ((curBrightness.maxBrightness - 1) * newBrightnessPercent) / 100
+			os.WriteFile(path.Join(sysBasePath, "brightness"), []byte(strconv.Itoa(newBrightness)), 0644)
+		}
+
+		curBrightness = GetCurBrightness()
+
+		conn, err := dbus.SessionBusPrivate()
+		if err != nil {
+			panic(err)
+		}
+		defer conn.Close()
+
+		if err = conn.Auth(nil); err != nil {
+			panic(err)
+		}
+
+		if err = conn.Hello(); err != nil {
+			panic(err)
+		}
+
+		_, err = notify.SendNotification(conn, curBrightness.notifyMsg)
+		if err != nil {
+			log.Printf("error sending notification: %v", err.Error())
+		}
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(screenCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// screenCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// screenCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	screenCmd.AddCommand(incScreenCmd)
+	screenCmd.AddCommand(decScreenCmd)
+	screenCmd.AddCommand(getScreenCmd)
+	screenCmd.AddCommand(setScreenCmd)
 }
